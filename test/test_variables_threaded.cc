@@ -12,6 +12,8 @@
 
 #include <ImageMagick/Magick++.h>
 
+#include "running_stat.h"
+
 using namespace std;
 
 mutex cout_mutex;
@@ -19,7 +21,8 @@ mutex img_files_mutex;
 mutex hist_mutex;
 
 // histograms pointers
-TH1F *h_mean_red, *h_mean_green, *h_mean_blue;
+TH1F *h_mean_red, *h_mean_green, *h_mean_blue,
+     *h_var_red,  *h_var_green,  *h_var_blue;
 
 //---------------------------------------------------------
 // Process images and fill histograms
@@ -55,12 +58,9 @@ void process_image( deque<string>& img_files ) {
     Magick::Geometry geom = img.size();
     size_t width  = geom.width();
     size_t height = geom.height();
-    size_t num_px = width*height;
 
     // variables to be calculated
-    double mean_red=0,
-           mean_green=0,
-           mean_blue=0;
+    running_stat red, green, blue;
 
     for (size_t h=0;h<height;++h) {
       for (size_t w=0;w<width;++w) {
@@ -68,18 +68,28 @@ void process_image( deque<string>& img_files ) {
         // Get pixel RGB info
         Magick::ColorRGB rgb(img.pixelColor(w,h));
 
-        mean_red   += rgb.red();
-        mean_green += rgb.green();
-        mean_blue  += rgb.blue();
+        red  .push( rgb.red  () );
+        green.push( rgb.green() );
+        blue .push( rgb.blue () );
 
       }
     }
 
-    // Fill histograms
+    // Fill histograms --------------------------
+    // lock mutex
     hist_mutex.lock();
-    h_mean_red  ->Fill( mean_red  /num_px );
-    h_mean_green->Fill( mean_green/num_px );
-    h_mean_blue ->Fill( mean_blue /num_px );
+
+    // mean
+    h_mean_red  ->Fill( red  .mean() );
+    h_mean_green->Fill( green.mean() );
+    h_mean_blue ->Fill( blue .mean() );
+
+    //variance
+    h_var_red  ->Fill( red  .var() );
+    h_var_green->Fill( green.var() );
+    h_var_blue ->Fill( blue .var() );
+
+    // unlock mutex
     hist_mutex.unlock();
   }
 }
@@ -115,6 +125,10 @@ int main(int argc, char** argv)
   h_mean_red   = new TH1F("mean_red","",100,0,1);
   h_mean_green = new TH1F("mean_green","",100,0,1);
   h_mean_blue  = new TH1F("mean_blue","",100,0,1);
+
+  h_var_red   = new TH1F("var_red","",100,0,1);
+  h_var_green = new TH1F("var_green","",100,0,1);
+  h_var_blue  = new TH1F("var_blue","",100,0,1);
 
   // process images in multiple threads
   const unsigned num_threads = max(thread::hardware_concurrency(),1u);

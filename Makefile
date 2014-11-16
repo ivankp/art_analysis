@@ -27,6 +27,10 @@ lib/img_reader.o: lib/%.o: src/%.cc src/%.h
 	@echo -e "Compiling \E[0;49;96m"$@"\E[0;0m ... "
 	@$(CPP) $(CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@
 
+lib/running_stat.o: lib/%.o: src/%.cc src/%.h
+	@echo -e "Compiling \E[0;49;96m"$@"\E[0;0m ... "
+	@$(CPP) $(CFLAGS) -c $(filter %.cc,$^) -o $@
+
 # main object rules
 lib/test1.o: lib/%.o: test/%.cc
 	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
@@ -77,10 +81,12 @@ bin/test_threads: bin/%: lib/%.o
 
 # EXE_OBJ dependencies
 lib/test2.o : src/img_reader.h
+lib/test_variables_threaded.o: src/running_stat.h
 
 # EXE dependencies
 bin/test2   : lib/img_reader.o
 bin/test_diffsqrgb : lib/img_reader.o
+bin/test_variables_threaded: lib/running_stat.o
 
 clean:
 	rm -rf bin lib
