@@ -14,7 +14,7 @@ MAGIC_LIBS   := $(shell Magick++-config --ldflags --libs)
 
 .PHONY: all clean
 
-EXE := bin/test1 bin/test2 bin/test_diffsqrgb
+EXE := bin/test_variables_threaded
 
 all: $(DIRS) $(EXE)
 
@@ -40,6 +40,18 @@ lib/test_diffsqrgb.o: lib/%.o: test/%.cc
 	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
 	@$(CPP) $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
 
+lib/test_variables.o: lib/%.o: test/%.cc
+	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
+	@$(CPP) $(CFLAGS) $(ROOT_CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@
+
+lib/test_threads.o: lib/%.o: test/%.cc
+	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
+	@$(CPP) $(CFLAGS) -c $(filter %.cc,$^) -o $@
+
+lib/test_variables_threaded.o: lib/%.o: test/%.cc
+	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
+	@$(CPP) $(CFLAGS) $(ROOT_CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@ -std=c++11
+
 # executable rules
 bin/test1 bin/test2: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
@@ -48,6 +60,18 @@ bin/test1 bin/test2: bin/%: lib/%.o
 bin/test_diffsqrgb: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
 	@$(CPP) $(filter %.o,$^) -o $@ $(MAGIC_LIBS) $(ROOT_LIBS)
+
+bin/test_variables: bin/%: lib/%.o
+	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
+	@$(CPP) $(filter %.o,$^) -o $@ $(MAGIC_LIBS) $(ROOT_LIBS)
+
+bin/test_variables_threaded: bin/%: lib/%.o
+	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
+	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(MAGIC_LIBS) $(ROOT_LIBS) -lpthread
+
+bin/test_threads: bin/%: lib/%.o
+	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
+	@$(CPP) $(filter %.o,$^) -o $@ -lpthread
 
 # OBJ dependencies
 

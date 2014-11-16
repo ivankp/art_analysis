@@ -1,0 +1,10 @@
+# compilation output
+bin
+lib
+
+# data
+dl
+
+# computation output files
+*.root
+out
