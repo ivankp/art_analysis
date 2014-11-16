@@ -9,10 +9,12 @@
 
 #include <TFile.h>
 #include <TH1.h>
+#include <TAxis.h>
 
 #include <ImageMagick/Magick++.h>
 
 #include "running_stat.h"
+#include "hist_wrap.h"
 
 using namespace std;
 
@@ -21,7 +23,7 @@ mutex img_files_mutex;
 mutex hist_mutex;
 
 // histograms pointers
-TH1F *h_mean_red, *h_mean_green, *h_mean_blue,
+hist *h_mean_red, *h_mean_green, *h_mean_blue,
      *h_var_red,  *h_var_green,  *h_var_blue;
 
 //---------------------------------------------------------
@@ -108,7 +110,7 @@ int main(int argc, char** argv)
 
   // add image files names to deque
   deque<string> img_files;
-  for (int arg=3;arg<argc;++arg) img_files.push_back( argv[arg] );
+  for (int arg=2;arg<argc;++arg) img_files.push_back( argv[arg] );
 
   // validate root output file name
   string root_file(argv[1]);
@@ -121,14 +123,19 @@ int main(int argc, char** argv)
   // open output root file
   TFile *f = new TFile(argv[1],"recreate");
 
-  // Book histograms
-  h_mean_red   = new TH1F("mean_red","",100,0,1);
-  h_mean_green = new TH1F("mean_green","",100,0,1);
-  h_mean_blue  = new TH1F("mean_blue","",100,0,1);
+  hist::read_binnings("config/hists.bins","^(.*)_");
 
-  h_var_red   = new TH1F("var_red","",100,0,1);
-  h_var_green = new TH1F("var_green","",100,0,1);
-  h_var_blue  = new TH1F("var_blue","",100,0,1);
+  // Book histograms
+  h_mean_red   = new hist("mean_red");
+  h_mean_green = new hist("mean_green");
+  h_mean_blue  = new hist("mean_blue");
+
+  h_var_red   = new hist("var_red");
+  h_var_green = new hist("var_green");
+  h_var_blue  = new hist("var_blue");
+
+  cout << (*h_mean_red)->GetXaxis()->GetXmax() << endl;
+  cout << (*h_var_red)->GetXaxis()->GetXmax() << endl;
 
   // process images in multiple threads
   const unsigned num_threads = max(thread::hardware_concurrency(),1u);

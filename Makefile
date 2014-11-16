@@ -23,70 +23,31 @@ $(DIRS):
 	@mkdir -p $@
 
 # class object rules
-lib/img_reader.o: lib/%.o: src/%.cc src/%.h
-	@echo -e "Compiling \E[0;49;96m"$@"\E[0;0m ... "
-	@$(CPP) $(CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@
-
 lib/running_stat.o: lib/%.o: src/%.cc src/%.h
 	@echo -e "Compiling \E[0;49;96m"$@"\E[0;0m ... "
 	@$(CPP) $(CFLAGS) -c $(filter %.cc,$^) -o $@
 
+lib/hist_wrap.o: lib/%.o: src/%.cc src/%.h
+	@echo -e "Compiling \E[0;49;96m"$@"\E[0;0m ... "
+	@$(CPP) $(CGFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@ -std=c++11
+
 # main object rules
-lib/test1.o: lib/%.o: test/%.cc
-	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
-	@$(CPP) $(CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@
-
-lib/test2.o: lib/%.o: test/%.cc
-	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
-	@$(CPP) $(CFLAGS) -c $(filter %.cc,$^) -o $@
-
-lib/test_diffsqrgb.o: lib/%.o: test/%.cc
-	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
-	@$(CPP) $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
-
-lib/test_variables.o: lib/%.o: test/%.cc
-	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
-	@$(CPP) $(CFLAGS) $(ROOT_CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@
-
-lib/test_threads.o: lib/%.o: test/%.cc
-	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
-	@$(CPP) $(CFLAGS) -c $(filter %.cc,$^) -o $@
-
 lib/test_variables_threaded.o: lib/%.o: test/%.cc
 	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
 	@$(CPP) $(CFLAGS) $(ROOT_CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@ -std=c++11
 
 # executable rules
-bin/test1 bin/test2: bin/%: lib/%.o
-	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
-	@$(CPP) $(filter %.o,$^) -o $@ $(MAGIC_LIBS)
-
-bin/test_diffsqrgb: bin/%: lib/%.o
-	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
-	@$(CPP) $(filter %.o,$^) -o $@ $(MAGIC_LIBS) $(ROOT_LIBS)
-
-bin/test_variables: bin/%: lib/%.o
-	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
-	@$(CPP) $(filter %.o,$^) -o $@ $(MAGIC_LIBS) $(ROOT_LIBS)
-
 bin/test_variables_threaded: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
-	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(MAGIC_LIBS) $(ROOT_LIBS) -lpthread
-
-bin/test_threads: bin/%: lib/%.o
-	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
-	@$(CPP) $(filter %.o,$^) -o $@ -lpthread
+	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(MAGIC_LIBS) $(ROOT_LIBS) -lpthread -lboost_regex
 
 # OBJ dependencies
 
 # EXE_OBJ dependencies
-lib/test2.o : src/img_reader.h
-lib/test_variables_threaded.o: src/running_stat.h
+lib/test_variables_threaded.o: src/running_stat.h src/hist_wrap.h
 
 # EXE dependencies
-bin/test2   : lib/img_reader.o
-bin/test_diffsqrgb : lib/img_reader.o
-bin/test_variables_threaded: lib/running_stat.o
+bin/test_variables_threaded: lib/running_stat.o lib/hist_wrap.o
 
 clean:
 	rm -rf bin lib
