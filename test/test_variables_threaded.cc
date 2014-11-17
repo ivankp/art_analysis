@@ -1,10 +1,10 @@
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <deque>
 #include <vector>
-#include <future>
+#include <thread>
 #include <mutex>
-#include <functional>
 #include <algorithm>
 #include <ctime>
 
@@ -172,9 +172,16 @@ int main(int argc, char** argv)
   // join threads so that program doesn't quit before they are done
   for(auto& thread : threads) thread.join();
 
-  // write output file and close it
+  // write output file
   f->Write();
   cout << "Wrote root file " << f->GetName() << endl;
+
+  //ofstream overflow("overflow.txt");
+  cout << endl;
+  hist::print_overflow(cout);
+  //overflow.close();
+
+  // close output file
   f->Close();
   delete f;
 
