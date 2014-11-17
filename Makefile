@@ -29,7 +29,7 @@ lib/running_stat.o: lib/%.o: src/%.cc src/%.h
 
 lib/hist_wrap.o: lib/%.o: src/%.cc src/%.h
 	@echo -e "Compiling \E[0;49;96m"$@"\E[0;0m ... "
-	@$(CPP) $(CGFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@ -std=c++11
+	@$(CPP) $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@ -std=c++11
 
 # main object rules
 lib/test_variables_threaded.o: lib/%.o: test/%.cc

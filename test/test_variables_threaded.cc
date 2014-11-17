@@ -6,6 +6,7 @@
 #include <mutex>
 #include <functional>
 #include <algorithm>
+#include <ctime>
 
 #include <TFile.h>
 #include <TH1.h>
@@ -18,13 +19,18 @@
 
 using namespace std;
 
-mutex cout_mutex;
+// mutexes
+mutex info_mutex;
 mutex img_files_mutex;
 mutex hist_mutex;
 
+// timing
+time_t last_time = time(0);
+int num_sec = 0; // seconds elapsed
+
 // histograms pointers
-hist *h_mean_red, *h_mean_green, *h_mean_blue,
-     *h_var_red,  *h_var_green,  *h_var_blue;
+hist *h_mean_red, *h_mean_green, *h_mean_blue, *h_mean_grey,
+     *h_var_red,  *h_var_green,  *h_var_blue,  *h_var_grey;
 
 //---------------------------------------------------------
 // Process images and fill histograms
@@ -50,11 +56,20 @@ void process_image( deque<string>& img_files ) {
     // Open image
     Magick::Image img(img_file);
 
-    // print current image name
-    cout_mutex.lock();
-    cout << setw(4) << num_imgs_left << " : ";
-    cout << img.baseFilename() << endl;
-    cout_mutex.unlock();
+    // keep track of time & print current image name
+    info_mutex.lock();
+    {
+      time_t cur_time = time(0);
+      if ( difftime(cur_time,last_time) > 1 ) {
+        ++num_sec;
+        last_time = cur_time;
+      }
+
+      cout << setw(3) << num_sec << "s : "
+           << setw(4) << num_imgs_left << " : "
+           << img.baseFilename() << endl;
+    }
+    info_mutex.unlock();
 
     // Get image dimensions
     Magick::Geometry geom = img.size();
@@ -62,7 +77,7 @@ void process_image( deque<string>& img_files ) {
     size_t height = geom.height();
 
     // variables to be calculated
-    running_stat red, green, blue;
+    running_stat red_stat, green_stat, blue_stat, grey_stat;
 
     for (size_t h=0;h<height;++h) {
       for (size_t w=0;w<width;++w) {
@@ -70,9 +85,14 @@ void process_image( deque<string>& img_files ) {
         // Get pixel RGB info
         Magick::ColorRGB rgb(img.pixelColor(w,h));
 
-        red  .push( rgb.red  () );
-        green.push( rgb.green() );
-        blue .push( rgb.blue () );
+          red_stat.push( rgb.red  () );
+        green_stat.push( rgb.green() );
+         blue_stat.push( rgb.blue () );
+
+        // Get pixel Gray Scale
+        Magick::ColorGray grey(img.pixelColor(w,h));
+
+        grey_stat.push( grey.shade() );
 
       }
     }
@@ -82,14 +102,16 @@ void process_image( deque<string>& img_files ) {
     hist_mutex.lock();
 
     // mean
-    h_mean_red  ->Fill( red  .mean() );
-    h_mean_green->Fill( green.mean() );
-    h_mean_blue ->Fill( blue .mean() );
+    h_mean_red  ->Fill(  red_stat.mean() );
+    h_mean_green->Fill( green_stat.mean() );
+    h_mean_blue ->Fill(  blue_stat.mean() );
+    h_mean_grey ->Fill(  grey_stat.mean() );
 
     //variance
-    h_var_red  ->Fill( red  .var() );
-    h_var_green->Fill( green.var() );
-    h_var_blue ->Fill( blue .var() );
+    h_var_red  ->Fill(   red_stat.var() );
+    h_var_green->Fill( green_stat.var() );
+    h_var_blue ->Fill(  blue_stat.var() );
+    h_var_grey ->Fill(  grey_stat.var() );
 
     // unlock mutex
     hist_mutex.unlock();
@@ -129,13 +151,12 @@ int main(int argc, char** argv)
   h_mean_red   = new hist("mean_red");
   h_mean_green = new hist("mean_green");
   h_mean_blue  = new hist("mean_blue");
+  h_mean_grey  = new hist("mean_grey");
 
   h_var_red   = new hist("var_red");
   h_var_green = new hist("var_green");
   h_var_blue  = new hist("var_blue");
-
-  cout << (*h_mean_red)->GetXaxis()->GetXmax() << endl;
-  cout << (*h_var_red)->GetXaxis()->GetXmax() << endl;
+  h_var_grey  = new hist("var_grey");
 
   // process images in multiple threads
   const unsigned num_threads = max(thread::hardware_concurrency(),1u);
