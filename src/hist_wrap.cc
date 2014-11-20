@@ -20,6 +20,7 @@ hist::~hist() { } // doesn't delete TH1F* because TFile will do that
 
 TH1F& hist::operator*()  const { return *h; }
 TH1F* hist::operator->() const { return  h; }
+TH1F* hist::get()        const { return  h; }
 
 hist::hist(const string& name,const string& title)
 : b(get_binning(name)), underflow(0,b.min), overflow(0,b.max),
@@ -49,7 +50,10 @@ void hist::read_binnings(const char* filename, const char* regex) {
   string hname;
   binning b;
   while ( binsfile >> hname ) {
-    if (hname[0]=='#') continue;
+    if (hname[0]=='#') {
+      binsfile.ignore(numeric_limits<streamsize>::max(), '\n');
+      continue;
+    }
 
     binsfile >> b.nbins;
     binsfile >> b.min;

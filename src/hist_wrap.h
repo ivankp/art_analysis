@@ -40,6 +40,7 @@ public:
 
   TH1F& operator*() const;
   TH1F* operator->() const;
+  TH1F* get() const;
 };
 
 #endif

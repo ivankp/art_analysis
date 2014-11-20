@@ -4,37 +4,37 @@
 
 #include <cmath>
 
-running_stat::running_stat(): m_n(0) {}
+running_stat::running_stat(): n(0) {}
 
 void running_stat::clear() {
-  m_n = 0;
+  n = 0;
 }
 
 void running_stat::push(double x) {
-  m_n++;
+  n++;
 
   // See Knuth TAOCP vol 2, 3rd edition, page 232
-  if (m_n == 1) {
-    m_oldM = m_newM = x;
-    m_oldS = 0.0;
+  if (n == 1) {
+    oldM = newM = x;
+    oldS = 0.;
   } else {
-    m_newM = m_oldM + (x - m_oldM)/m_n;
-    m_newS = m_oldS + (x - m_oldM)*(x - m_newM);
+    newM = oldM + (x - oldM)/n;
+    newS = oldS + (x - oldM)*(x - newM);
 
     // set up for next iteration
-    m_oldM = m_newM; 
-    m_oldS = m_newS;
+    oldM = newM; 
+    oldS = newS;
   }
 }
 
-int running_stat::num() const { return m_n; }
+int running_stat::num() const { return n; }
 
 double running_stat::mean() const {
-  return (m_n > 0) ? m_newM : 0.0;
+  return (n > 0) ? newM : 0.;
 }
 
 double running_stat::var() const {
-  return ( (m_n > 1) ? m_newS/(m_n - 1) : 0.0 );
+  return ( (n > 1) ? newS/(n - 1) : 0. );
 }
 
 double running_stat::stdev() const {

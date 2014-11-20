@@ -14,7 +14,7 @@ MAGIC_LIBS   := $(shell Magick++-config --ldflags --libs)
 
 .PHONY: all clean
 
-EXE := bin/test_variables_threaded bin/draw_together
+EXE := bin/calc_vars bin/draw_vars
 
 all: $(DIRS) $(EXE)
 
@@ -32,30 +32,32 @@ lib/hist_wrap.o: lib/%.o: src/%.cc src/%.h
 	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
 
 # main object rules
-lib/test_variables_threaded.o: lib/%.o: test/%.cc
+lib/calc_vars.o: lib/%.o: src/%.cc
 	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
 	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@
 
-lib/draw_together.o: lib/%.o: test/%.cc
+lib/draw_vars.o: lib/%.o: src/%.cc
 	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
 	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
 
 # executable rules
-bin/test_variables_threaded: bin/%: lib/%.o
+bin/calc_vars: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
-	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(MAGIC_LIBS) $(ROOT_LIBS) -lpthread -lboost_regex
+	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(MAGIC_LIBS) $(ROOT_LIBS) -lpthread
 
-bin/draw_together: bin/%: lib/%.o
+bin/draw_vars: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
-	@$(CPP) $(filter %.o,$^) -o $@ $(ROOT_LIBS)
+	@$(CPP) $(filter %.o,$^) -o $@ $(ROOT_LIBS) -lboost_program_options -lboost_regex
 
 # OBJ dependencies
 
 # EXE_OBJ dependencies
-lib/test_variables_threaded.o: src/running_stat.h src/hist_wrap.h
+lib/calc_vars.o   : src/running_stat.h
+lib/draw_vars.o   : src/hist_wrap.h
 
 # EXE dependencies
-bin/test_variables_threaded: lib/running_stat.o lib/hist_wrap.o
+bin/calc_vars     : lib/running_stat.o
+bin/draw_vars     : lib/hist_wrap.o
 
 clean:
 	rm -rf bin lib

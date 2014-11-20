@@ -1,4 +1,4 @@
 default 100 0 1
 
-mean 20 0 1
-var  20 0 0.2
+mean 40 0 1
+var  40 0 0.2
