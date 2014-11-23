@@ -14,7 +14,7 @@ MAGIC_LIBS   := $(shell Magick++-config --ldflags --libs)
 
 .PHONY: all clean
 
-EXE := bin/calc_vars bin/draw_vars
+EXE := bin/calc_vars bin/draw_vars bin/resize
 
 all: $(DIRS) $(EXE)
 
@@ -40,6 +40,10 @@ lib/draw_vars.o: lib/%.o: src/%.cc
 	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
 	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
 
+lib/resize.o: lib/%.o: src/%.cc
+	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
+	@$(CPP) -std=c++11 $(CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@
+
 # executable rules
 bin/calc_vars: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
@@ -48,6 +52,10 @@ bin/calc_vars: bin/%: lib/%.o
 bin/draw_vars: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
 	@$(CPP) $(filter %.o,$^) -o $@ $(ROOT_LIBS) -lboost_program_options -lboost_regex
+
+bin/resize: bin/%: lib/%.o
+	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
+	@$(CPP) $(filter %.o,$^) -o $@ $(MAGIC_LIBS) -lpthread
 
 # OBJ dependencies
 
