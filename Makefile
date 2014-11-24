@@ -3,8 +3,7 @@ CPP := g++
 
 DIRS := lib bin
 
-CFLAGS := -Wall -O3 -Isrc
-CGFLAGS := -Wall -g -Isrc
+CFLAGS := -Wall -g -Isrc
 
 ROOT_CFLAGS := $(shell root-config --cflags)
 ROOT_LIBS   := $(shell root-config --libs)

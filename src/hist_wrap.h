@@ -3,29 +3,15 @@
 
 #include <iostream>
 #include <string>
-#include <vector>
-
-#include <unordered_map>
 
 class TH1F;
 
 class hist {
-  struct binning {
-    int nbins; double min, max;
-    binning();
-    ~binning();
-  };
-  static std::unordered_map<std::string,binning> binnings;
-  static std::vector<const hist*> all;
-  static std::string binning_name_regex_pattern;
-  static bool use_regex;
-  static binning default_binning;
+  class acc_impl; // implementation of accumulator
+  static acc_impl *pimpl;
 
-  const binning get_binning(const std::string& hist_name);
-
-  binning b;
-  std::pair<int,double> underflow, overflow;
   TH1F * h;
+  std::pair<int,double> underflow, overflow;
 
 public:
   hist();
@@ -34,7 +20,9 @@ public:
 
   void Fill(double x, double w=1.);
   void FillOverflow(double weight);
-  static void read_binnings(const char* filename, const char* regex="");
+  void FillUnderflow(double weight);
+
+  static void read_binnings(const char* filename);
   static std::ostream& print_overflow(std::ostream& out=std::cout);
   static void delete_all();
 

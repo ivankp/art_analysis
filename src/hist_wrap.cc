@@ -1,6 +1,7 @@
 #include "hist_wrap.h"
 
 #include <fstream>
+#include <vector>
 
 #include <boost/regex.hpp>
 
@@ -8,43 +9,45 @@
 
 using namespace std;
 
+#define test(var) \
+  cout <<"\033[36m"<< #var <<"\033[0m"<< " = " << var << endl;
+
 // binning ************************************************
 
-hist::binning::binning(): nbins(100), min(0.), max(100.) { }
-hist::binning::~binning() { }
+struct binning {
+  int nbins; double min, max;
+  binning(): nbins(100), min(0.), max(100.) { }
+  ~binning() { }
+};
+
+// acc_impl ***********************************************
+
+struct hist::acc_impl {
+  vector<const hist*> all;
+
+  binning default_binning;
+  vector<pair<boost::regex*,binning>> binnings;
+  vector<pair<string,int>> btest;
+
+  const binning& get_binning(const string& hist_name) {
+    boost::smatch result;
+    for (auto& x : binnings) {
+      if (boost::regex_match(hist_name, result, *x.first,
+                             boost::match_default | boost::match_partial))
+        if(result[0].matched) return x.second;
+    }
+    return default_binning;
+  }
+
+  ~acc_impl() {
+    for (auto& x : binnings) delete x.first;
+    for (auto& h : all) delete h;
+  }
+};
 
 // hist ***************************************************
 
-hist::hist(): b(), underflow(0,0.), overflow(0,0.), h(NULL) { }
-hist::~hist() { } // doesn't delete TH1F* because TFile will do that
-
-TH1F& hist::operator*()  const { return *h; }
-TH1F* hist::operator->() const { return  h; }
-TH1F* hist::get()        const { return  h; }
-
-hist::hist(const string& name,const string& title)
-: b(get_binning(name)), underflow(0,b.min), overflow(0,b.max),
-  h( new TH1F(name.c_str(),title.c_str(),b.nbins,b.min,b.max) )
-{
-  all.push_back(this);
-}
-void hist::Fill(double x, double w) {
-  h->Fill(x,w);
-  if (x>=b.max) {
-    ++overflow.first;
-    if (x>overflow.second) overflow.second = x;
-  }
-  else if (x<b.min) {
-    ++underflow.first;
-    if (x<underflow.second) underflow.second = x;
-  }
-}
-
-void hist::FillOverflow(double weight) {
-  Fill(h->GetNbinsX()+1,weight);
-}
-
-void hist::read_binnings(const char* filename, const char* regex) {
+void hist::read_binnings(const char* filename) {
   ifstream binsfile(filename);
 
   string hname;
@@ -59,39 +62,47 @@ void hist::read_binnings(const char* filename, const char* regex) {
     binsfile >> b.min;
     binsfile >> b.max;
 
-    if (hname.compare("default")) binnings[hname] = b;
-    else default_binning = b;
+    pimpl->binnings.emplace_back( new boost::regex(hname), b );
   }
-
-  if (regex[0]!='\0') {
-    use_regex = true;
-    binning_name_regex_pattern = regex;
-  } else use_regex = false;
 }
 
-const hist::binning hist::get_binning(const string& hist_name) {
-  if (use_regex) {
+hist::hist(): h(NULL), underflow(0,0.), overflow(0,0.) { }
+hist::~hist() { } // doesn't delete TH1F* because TFile will do that
 
-    static const boost::regex patern(binning_name_regex_pattern);
+TH1F& hist::operator*()  const { return *h; }
+TH1F* hist::operator->() const { return  h; }
+TH1F* hist::get()        const { return  h; }
 
-    boost::smatch result;
-    if (boost::regex_search(hist_name, result, patern)) {
-      string key(result[1].first, result[1].second);
+hist::hist(const string& name, const string& title) {
+  const binning& b = pimpl->get_binning(name);
+  h = new TH1F(name.c_str(),title.c_str(),b.nbins,b.min,b.max);
 
-      if (binnings.count(key)) return binnings[key];
-      else return default_binning;
+  underflow = make_pair(0,b.min);
+  overflow  = make_pair(0,b.max);
 
-    } else return default_binning;
-
-  } else {
-    if (binnings.count(hist_name)) return binnings[hist_name];
-    else return default_binning;
+  pimpl->all.push_back(this);
+}
+void hist::Fill(double x, double w) {
+  h->Fill(x,w);
+  if (x<h->GetBinLowEdge(1)) {
+    ++underflow.first;
+    if (x<underflow.second) underflow.second = x;
+  } else
+  if (x>=h->GetBinLowEdge(h->GetNbinsX()+1)) {
+    ++overflow.first;
+    if (x>overflow.second) overflow.second = x;
   }
+}
+
+void hist::FillUnderflow(double weight) {
+  Fill(0,weight);
+}
+void hist::FillOverflow(double weight) {
+  Fill(h->GetNbinsX()+1,weight);
 }
 
 ostream& hist::print_overflow(ostream& out) {
-  for (vector<const hist*>::iterator it=all.begin(), end=all.end(); it<end; ++it) {
-    const hist* h = *it;
+  for (auto& h : pimpl->all) {
     if (h->underflow.first) {
       out << "Underflow in " << h->h->GetName()
           << ": N="<<h->underflow.first << " min="<<h->underflow.second << endl;
@@ -105,12 +116,7 @@ ostream& hist::print_overflow(ostream& out) {
 }
 
 void hist::delete_all() {
-  for (vector<const hist*>::iterator it=all.begin(), end=all.end(); it<end; ++it)
-    delete *it;
+  delete pimpl;
 }
 
-unordered_map<string,hist::binning> hist::binnings;
-vector<const hist*> hist::all;
-string hist::binning_name_regex_pattern;
-bool hist::use_regex;
-hist::binning hist::default_binning;
+hist::acc_impl *hist::pimpl = new hist::acc_impl;
