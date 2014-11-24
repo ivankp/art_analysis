@@ -1,0 +1,7 @@
+Data analysis project for Wade's class
+
+Useful commands:
+
+for h in stat hist mvg; do ./bin/draw_vars `ls out | grep "_$h\.root" | sed -e 's/\(.*\)\.root/-i \1\:out\/\1\.root/g'` -o vars_$h.pdf -n; done
+
+
