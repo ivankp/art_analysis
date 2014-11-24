@@ -10,7 +10,7 @@ def download_file(url):
     local_filename = url.split('/')[-1]
     # NOTE the stream=True parameter
     r = requests.get(url, stream=True)
-    with open("dl/vangogh/"+local_filename, 'wb') as f:
+    with open("dl/dali/"+local_filename, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024): 
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
@@ -24,8 +24,8 @@ index = "http://www.wikiart.org/"
 
 num_dl = 0
 
-for p in range(25,34):
-  page = sesh.get(index+'en/vincent-van-gogh/mode/all-paintings-by-alphabet/%d' % p)
+for p in range(1,20):
+  page = sesh.get(index+'en/salvador-dali/mode/all-paintings-by-alphabet/%d' % p)
   root = lxml.html.fromstring(page.text)
 
   links = root.xpath('//a[@class="small rimage"]')
@@ -41,4 +41,3 @@ for p in range(25,34):
       print "%d : %s" % (num_dl, url)
       download_file(url)
 
-# 1440

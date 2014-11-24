@@ -20,24 +20,17 @@ def download_file(url):
 # start a session ##############################################
 sesh = requests.Session()
 
-index = "http://www.wikiart.org/"
+index = "http://www.pablopicasso.org"
 
-num_dl = 0
+page = sesh.get(index+"/picasso-paintings.jsp")
+root = lxml.html.fromstring(page.text)
 
-for p in range(1,20):
-  page = sesh.get(index+'en/pablo-picasso/mode/all-paintings-by-alphabet/%d' % p)
-  root = lxml.html.fromstring(page.text)
+links = root.xpath('//*[@id="art-main"]/div[2]/div[10]/div[3]/div/div[2]/div/div[10]/div[1]/div[2]/div/table/tbody/tr/td[1]/a')
 
-  links = root.xpath('//a[@class="small rimage"]')
+for a in links:
+  url = index+"/images/paintings"+a.attrib["href"].split('.')[0]+".jpg"
+  print url
+  download_file(url)
 
-  for a in links:
-    num_dl += 1
-    page = sesh.get(index+a.attrib["href"])
-    root = lxml.html.fromstring(page.text)
-    img = root.xpath('//a[@id="paintingImage"]')
-    if len(img)==0: print "No img found in %s" % a.attrib["href"]
-    else:
-      url = img[0].attrib["href"]
-      print "%d : %s" % (num_dl, url)
-      download_file(url)
+print "Num links: %d" % len(links)
 

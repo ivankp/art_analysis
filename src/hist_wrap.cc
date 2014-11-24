@@ -63,7 +63,7 @@ void hist::read_binnings(const char* filename, const char* regex) {
     else default_binning = b;
   }
 
-  if (regex) {
+  if (regex[0]!='\0') {
     use_regex = true;
     binning_name_regex_pattern = regex;
   } else use_regex = false;

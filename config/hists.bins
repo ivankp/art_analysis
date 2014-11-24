@@ -1,4 +1,45 @@
 default 100 0 1
 
-mean 40 0 1
-var  40 0 0.2
+mean_red 40 0 1
+mean_green 40 0 1
+mean_blue 40 0 1
+mean_grey 40 0 1
+mean_lum 40 0 1
+
+var_red 40 0 0.2
+var_green 40 0 0.2
+var_blue 40 0 0.2
+var_grey 40 0 0.2
+var_lum 40 0 0.2
+
+mean_grad_mag 30 0 3
+mean_grad_ang 30 -2.5 2.5
+
+var_grad_mag 30 0 1.5
+var_grad_ang 30 0 10
+
+aspect_ratio 30 0 3
+
+mean_slope 40 -10 25
+var_slope  40   0 20
+
+
+skew_red 40 -4 4
+skew_green 40 -4 4
+skew_blue 40 -4 4
+skew_grey 40 -4 4
+skew_lum 40 -4 4
+
+kurt_red 40 -4 10
+kurt_green 40 -4 10
+kurt_blue 40 -4 10
+kurt_grey 40 -4 10
+kurt_lum 40 -4 10
+
+ent_red 40 2.5 4.6
+ent_green 40 2.5 4.6
+ent_blue 40 2.5 4.6
+ent_grey 40 2.5 4.6
+ent_lum 40 2.5 4.6
+
+num_lines 50 0 300

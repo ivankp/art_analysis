@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include <unordered_map>
+//#include <unordered_map>
 #include <memory>
 
 #include <boost/program_options.hpp>
@@ -99,12 +99,12 @@ int main(int argc, char *argv[])
   }
   // END OPTIONS ****************************************************
 
-  hist::read_binnings("config/hists.bins","^(.*)_");
+  hist::read_binnings("config/hists.bins");
 
-  unordered_map< string, vector<hist*> > h_;
+  vector< pair< string, vector<hist*> > > h_;
   vector<pair<Float_t,hist*>> x;
 
-  Color_t color[] = {602,46,3};
+  Color_t color[] = {602,46,3,2,94};
 
   for (auto& f : fin) { // open root files
     static int c = 0;
@@ -122,7 +122,20 @@ int main(int argc, char *argv[])
       cout << "Branch: " << name << endl;
       br->SetAddress(&x[i].first);
       x[i].second = new hist(name,f.name);
-      h_[name].push_back( x[i].second );
+
+      bool found = false;
+      for (auto& p : h_) {
+        if (!p.first.compare(name)) {
+          found = true;
+          p.second.push_back( x[i].second );
+          break;
+        }
+      }
+      if (!found) {
+        h_.push_back( make_pair(name, vector<hist*>()) );
+        h_.back().second.push_back( x[i].second );
+      }
+
       TH1* h = x[i].second->get();
       h->SetLineColor(color[c]);
       h->SetMarkerColor(color[c]);
@@ -177,6 +190,7 @@ int main(int argc, char *argv[])
         h->GetEntries()
       ) );
       h->SetTitle(h->GetName());
+      if (logy) h->SetMinimum(1e-3);
       if (i==0) h->Draw();
       else h->Draw("same");
     }
@@ -186,6 +200,8 @@ int main(int argc, char *argv[])
   }
 
   canv.SaveAs((fout+']').c_str());
+
+  hist::print_overflow();
 
   return 0;
 }

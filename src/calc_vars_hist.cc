@@ -10,10 +10,9 @@
 
 #include <TFile.h>
 #include <TTree.h>
+#include <TH1.h>
 
 #include <ImageMagick/Magick++.h>
-
-#include "running_stat.h"
 
 using namespace std;
 
@@ -29,20 +28,32 @@ int num_sec = 0; // seconds elapsed
 // Tree
 TTree *tree;
 
-// Branches
-Float_t mean_red, mean_green, mean_blue, mean_grey, mean_lum,
-        var_red,  var_green,  var_blue,  var_grey, var_lum,
-        mean_grad_mag, var_grad_mag,
-        mean_grad_ang, var_grad_ang,
-        aspect_ratio;
-
 template<typename T>
 inline T sq(const T& x) { return x*x; }
 template<typename T>
 inline T sumsq(const T& a, const T& b) { return sqrt(sq(a)+sq(b)); }
 
-vector<vector<double>> Gx { {-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1} };
-vector<vector<double>> Gy { { 1, 2, 1}, { 0, 0, 0}, {-1,-2,-1} };
+double Entropy(const TH1F& h) {
+  double ent = 0.;
+  double np = h.GetEntries();
+  for (int i=1,n=h.GetNbinsX();i<=n;++i) {
+    double p = h.GetBinContent(i)/np;
+    ent += -p*log(p);
+  }
+  return ent;
+}
+
+// Branches
+struct stats {
+  Float_t mean, var, skew, kurt, ent;
+  void operator()(const TH1F& h) {
+    mean = h.GetMean();
+    var  = sq(h.GetStdDev());
+    skew = h.GetSkewness();
+    kurt = h.GetKurtosis();
+    ent  = Entropy(h);
+  }
+} red, green, blue, lum;
 
 //---------------------------------------------------------
 // Process images and fill histograms
@@ -89,16 +100,13 @@ void process_image( deque<string>& img_files ) noexcept {
     size_t width  = geom.width();
     size_t height = geom.height();
 
-    // variables to be calculated
-    running_stat red_stat, green_stat, blue_stat, grey_stat, lum_stat,
-                 grad_mag_stat, grad_ang_stat;
-
-    deque<deque<double>> pixdeq;
+    // histograms
+    TH1F   h_red(Form("h_red_%s",  img_file.c_str()),"",100,0,1),
+         h_green(Form("h_green_%s",img_file.c_str()),"",100,0,1),
+          h_blue(Form("h_blue_%s", img_file.c_str()),"",100,0,1),
+           h_lum(Form("h_lum_%s",  img_file.c_str()),"",100,0,1);
 
     for (size_t h=0;h<height;++h) {
-
-      pixdeq.push_back(deque<double>());
-
       for (size_t w=0;w<width;++w) {
 
         // Get pixel color
@@ -107,41 +115,11 @@ void process_image( deque<string>& img_files ) noexcept {
         // Get pixel RGB info
         const Magick::ColorRGB rgb(c);
 
-          red_stat.push( rgb.red  () );
-        green_stat.push( rgb.green() );
-         blue_stat.push( rgb.blue () );
-
-        double lum = 0.27*rgb.red() + 0.67*rgb.green() + 0.06*rgb.blue();
-          lum_stat.push( lum );
-
-        // Get pixel Gray Scale
-        const Magick::ColorGray grey(c);
-
-        grey_stat.push( grey.shade() );
-
-        // Convolutions
-        if (width-w>3) pixdeq.back().push_back( lum );
-
-        if (pixdeq.size()==3 && pixdeq.back().size()==3) {
-
-          double _Gx=0., _Gy=0.;
-          for (int i=0;i<3;++i) {
-            for (int j=0;j<3;++j) {
-              _Gx += Gx[i][j]*pixdeq[i][j];
-              _Gy += Gy[i][j]*pixdeq[i][j];
-            }
-          }
-
-          grad_mag_stat.push(sumsq(_Gx,_Gy));
-          grad_ang_stat.push(atan2(_Gy,_Gx));
-
-          pixdeq.back().pop_front();
-        }
-
+          h_red.Fill( rgb.red  () );
+        h_green.Fill( rgb.green() );
+         h_blue.Fill( rgb.blue () );
+          h_lum.Fill( 0.27*rgb.red() + 0.67*rgb.green() + 0.06*rgb.blue() );
       }
-
-      if (pixdeq.size()==3) pixdeq.pop_front();
-
     }
 
     // Fill histograms --------------------------
@@ -149,26 +127,10 @@ void process_image( deque<string>& img_files ) noexcept {
     tree_mutex.lock();
 
     // mean
-    mean_red   =   red_stat.mean();
-    mean_green = green_stat.mean();
-    mean_blue  =  blue_stat.mean();
-    mean_grey  =  grey_stat.mean();
-    mean_lum   =   lum_stat.mean();
-
-    mean_grad_mag = grad_mag_stat.mean();
-    mean_grad_ang = grad_ang_stat.mean();
-
-    //variance
-    var_red   =   red_stat.var();
-    var_green = green_stat.var();
-    var_blue  =  blue_stat.var();
-    var_grey  =  grey_stat.var();
-    var_lum   =   lum_stat.var();
-
-    var_grad_mag = grad_mag_stat.var();
-    var_grad_ang = grad_ang_stat.var();
-
-    aspect_ratio = width/height;
+    red(h_red);
+    green(h_green);
+    blue(h_blue);
+    lum(h_lum);
 
     tree->Fill();
 
@@ -206,25 +168,30 @@ int main(int argc, char** argv)
   tree = new TTree("variables","");
 
   // Book histograms
-  tree->Branch("aspect_ratio",&aspect_ratio,"aspect_ratio/F");
+  tree->Branch("mean_red",&red.mean,"mean_red/F");
+  tree->Branch("mean_green",&green.mean,"mean_green/F");
+  tree->Branch("mean_blue",&blue.mean,"mean_blue/F");
+  tree->Branch("mean_lum",&lum.mean,"mean_lum/F");
 
-  tree->Branch("mean_red",&mean_red,"mean_red/F");
-  tree->Branch("mean_green",&mean_green,"mean_green/F");
-  tree->Branch("mean_blue",&mean_blue,"mean_blue/F");
-  tree->Branch("mean_grey",&mean_grey,"mean_grey/F");
-  tree->Branch("mean_lum",&mean_lum,"mean_lum/F");
+  tree->Branch("var_red",&red.var,"var_red/F");
+  tree->Branch("var_green",&green.var,"var_green/F");
+  tree->Branch("var_blue",&blue.var,"var_blue/F");
+  tree->Branch("var_lum",&lum.var,"var_lum/F");
 
-  tree->Branch("mean_grad_mag",&mean_grad_mag,"mean_grad_mag/F");
-  tree->Branch("mean_grad_ang",&mean_grad_ang,"mean_grad_ang/F");
+  tree->Branch("skew_red",&red.skew,"skew_red/F");
+  tree->Branch("skew_green",&green.skew,"skew_green/F");
+  tree->Branch("skew_blue",&blue.skew,"skew_blue/F");
+  tree->Branch("skew_lum",&lum.skew,"skew_lum/F");
 
-  tree->Branch("var_red",&var_red,"var_red/F");
-  tree->Branch("var_green",&var_green,"var_green/F");
-  tree->Branch("var_blue",&var_blue,"var_blue/F");
-  tree->Branch("var_grey",&var_grey,"var_grey/F");
-  tree->Branch("var_lum",&var_lum,"var_lum/F");
+  tree->Branch("kurt_red",&red.kurt,"kurt_red/F");
+  tree->Branch("kurt_green",&green.kurt,"kurt_green/F");
+  tree->Branch("kurt_blue",&blue.kurt,"kurt_blue/F");
+  tree->Branch("kurt_lum",&lum.kurt,"kurt_lum/F");
 
-  tree->Branch("var_grad_mag",&var_grad_mag,"var_grad_mag/F");
-  tree->Branch("var_grad_ang",&var_grad_ang,"var_grad_ang/F");
+  tree->Branch("ent_red",&red.ent,"ent_red/F");
+  tree->Branch("ent_green",&green.ent,"ent_green/F");
+  tree->Branch("ent_blue",&blue.ent,"ent_blue/F");
+  tree->Branch("ent_lum",&lum.ent,"ent_lum/F");
 
   // process images in multiple threads
   const unsigned num_threads = max(thread::hardware_concurrency(),1u);

@@ -20,25 +20,23 @@ def download_file(url):
 # start a session ##############################################
 sesh = requests.Session()
 
-index = "http://www.wikiart.org/"
+index = "http://www.vangoghgallery.com"
 
-num_dl = 0
+page = sesh.get(index+"/catalog/Painting/")
+root = lxml.html.fromstring(page.text)
 
-for p in range(0,34):
-  page = sesh.get(index+'en/vincent-van-gogh/mode/all-paintings-by-alphabet/%d' % p)
+links = root.xpath('//*[@id="middle"]/table[@class="bodymainsmall"]/tr/td[2]/a')
+#links = root.xpath('//*[@id="middle"]/table[2]/tbody/tr[2]/td[2]/a')
+
+for a in links:
+  page = sesh.get(index+a.attrib["href"])
   root = lxml.html.fromstring(page.text)
+  img = root.xpath('//*[@id="artworkImage"]/tbody/tr/td/img')
+  if len(img)==0: print "No img found in %s" % a.attrib["href"]
+  else:
+    url = index+img[0].attrib["src"]
+    print url
+    download_file(url)
 
-  links = root.xpath('//a[@class="small rimage"]')
+print "Num links: %d" % len(links)
 
-  for a in links:
-    num_dl += 1
-    page = sesh.get(index+a.attrib["href"])
-    root = lxml.html.fromstring(page.text)
-    img = root.xpath('//a[@id="paintingImage"]')
-    if len(img)==0: print "No img found in %s" % a.attrib["href"]
-    else:
-      url = img[0].attrib["href"]
-      print "%d : %s" % (num_dl, url)
-      download_file(url)
-
-# 1440
