@@ -15,7 +15,7 @@ class hist {
 
 public:
   hist();
-  hist(const std::string& name,const std::string& title="");
+  hist(const std::string& name, const std::string& title="");
   ~hist();
 
   void Fill(double x, double w=1.);

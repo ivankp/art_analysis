@@ -204,6 +204,7 @@ int main(int argc, char *argv[])
   canv.SaveAs((fout+']').c_str());
 
   hist::print_overflow();
+  hist::delete_all();
 
   return 0;
 }
