@@ -22,7 +22,7 @@ public:
   void FillOverflow(double weight);
   void FillUnderflow(double weight);
 
-  static void read_binnings(const char* filename);
+  static void read_binnings(const std::string& filename);
   static std::ostream& print_overflow(std::ostream& out=std::cout);
   static void delete_all();
 
