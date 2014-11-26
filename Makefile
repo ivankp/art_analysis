@@ -13,7 +13,7 @@ MAGIC_LIBS   := $(shell Magick++-config --ldflags --libs)
 
 .PHONY: all clean
 
-EXE := bin/calc_vars bin/calc_vars_mvg bin/calc_vars_hist bin/draw_vars bin/resize
+EXE := bin/calc_vars_color bin/draw_vars bin/resize bin/split_data
 
 all: $(DIRS) $(EXE)
 
@@ -31,15 +31,16 @@ lib/hist_wrap.o: lib/%.o: src/%.cc src/%.h
 	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
 
 # main object rules
-lib/calc_vars.o lib/calc_vars_hist.o: lib/%.o: src/%.cc
+#lib/calc_vars.o lib/calc_vars_hist.o: lib/%.o: src/%.cc
+lib/calc_vars_color.o: lib/%.o: src/%.cc
 	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
 	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@
 
-lib/calc_vars_mvg.o: lib/%.o: src/%.cc
-	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
-	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
+#lib/calc_vars_mvg.o: lib/%.o: src/%.cc
+#	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
+#	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
 
-lib/draw_vars.o: lib/%.o: src/%.cc
+lib/draw_vars.o lib/split_data.o: lib/%.o: src/%.cc
 	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
 	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
 
@@ -48,17 +49,22 @@ lib/resize.o: lib/%.o: src/%.cc
 	@$(CPP) -std=c++11 $(CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@
 
 # executable rules
-bin/calc_vars bin/calc_vars_hist: bin/%: lib/%.o
+#bin/calc_vars bin/calc_vars_hist: bin/%: lib/%.o
+bin/calc_vars_color: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
 	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(MAGIC_LIBS) $(ROOT_LIBS) -lpthread
 
-bin/calc_vars_mvg: bin/%: lib/%.o
-	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
-	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(ROOT_LIBS) -lpthread -lboost_regex
+#bin/calc_vars_mvg: bin/%: lib/%.o
+#	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
+#	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(ROOT_LIBS) -lpthread -lboost_regex
 
 bin/draw_vars: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
 	@$(CPP) $(filter %.o,$^) -o $@ $(ROOT_LIBS) -lboost_program_options -lboost_regex
+
+bin/split_data: bin/%: lib/%.o
+	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
+	@$(CPP) $(filter %.o,$^) -o $@ $(ROOT_LIBS)
 
 bin/resize: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
@@ -67,11 +73,11 @@ bin/resize: bin/%: lib/%.o
 # OBJ dependencies
 
 # EXE_OBJ dependencies
-lib/calc_vars.o lib/calc_vars_mvg.o: src/running_stat.h
+#lib/calc_vars.o lib/calc_vars_mvg.o: src/running_stat.h
 lib/draw_vars.o   : src/hist_wrap.h
 
 # EXE dependencies
-bin/calc_vars bin/calc_vars_mvg: lib/running_stat.o
+#bin/calc_vars bin/calc_vars_mvg: lib/running_stat.o
 bin/draw_vars     : lib/hist_wrap.o
 
 clean:
