@@ -188,7 +188,7 @@ int main(int argc, char** argv)
     string dir(argv[3]);
     if (dir.back()!='/') img_name.insert(0,"/");
     img_name.insert(0,dir);
-    if (argv[4][0]!='.') img_name += '.';
+    //if (argv[4][0]!='.') img_name += '.';
     img_name += argv[4];
     img_files.emplace_back(i,img_name);
     ++i;

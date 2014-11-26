@@ -9,3 +9,5 @@ dl
 *.root
 *.pdf
 out
+*_data
+*.tar.gz
