@@ -13,7 +13,7 @@ MAGIC_LIBS   := $(shell Magick++-config --ldflags --libs)
 
 .PHONY: all clean
 
-EXE := bin/calc_vars_color bin/draw_vars bin/resize bin/split_data
+EXE := bin/calc_vars_color bin/calc_vars_grad bin/draw_vars bin/resize bin/split_data
 
 all: $(DIRS) $(EXE)
 
@@ -32,7 +32,7 @@ lib/hist_wrap.o: lib/%.o: src/%.cc src/%.h
 
 # main object rules
 #lib/calc_vars.o lib/calc_vars_hist.o: lib/%.o: src/%.cc
-lib/calc_vars_color.o: lib/%.o: src/%.cc
+lib/calc_vars_color.o lib/calc_vars_grad.o: lib/%.o: src/%.cc
 	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
 	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) $(MAGIC_CFLAGS) -c $(filter %.cc,$^) -o $@
 
@@ -50,7 +50,7 @@ lib/resize.o: lib/%.o: src/%.cc
 
 # executable rules
 #bin/calc_vars bin/calc_vars_hist: bin/%: lib/%.o
-bin/calc_vars_color: bin/%: lib/%.o
+bin/calc_vars_color bin/calc_vars_grad: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
 	@$(CPP) -Wl,--no-as-needed $(filter %.o,$^) -o $@ $(MAGIC_LIBS) $(ROOT_LIBS) -lpthread
 
