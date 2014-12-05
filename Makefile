@@ -13,7 +13,7 @@ MAGIC_LIBS   := $(shell Magick++-config --ldflags --libs)
 
 .PHONY: all clean
 
-EXE := bin/calc_vars bin/calc_vars_mvg bin/calc_vars_hist bin/draw_vars bin/resize
+EXE := bin/calc_vars bin/calc_vars_mvg bin/calc_vars_hist bin/draw_vars bin/resize bin/select_vars
 
 all: $(DIRS) $(EXE)
 
@@ -39,7 +39,7 @@ lib/calc_vars_mvg.o: lib/%.o: src/%.cc
 	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
 	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
 
-lib/draw_vars.o: lib/%.o: src/%.cc
+lib/draw_vars.o lib/select_vars.o: lib/%.o: src/%.cc
 	@echo -e "Compiling \E[0;49;94m"$@"\E[0;0m ... "
 	@$(CPP) -std=c++11 $(CFLAGS) $(ROOT_CFLAGS) -c $(filter %.cc,$^) -o $@
 
@@ -59,6 +59,10 @@ bin/calc_vars_mvg: bin/%: lib/%.o
 bin/draw_vars: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
 	@$(CPP) $(filter %.o,$^) -o $@ $(ROOT_LIBS) -lboost_program_options -lboost_regex
+
+bin/select_vars: bin/%: lib/%.o
+	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
+	@$(CPP) $(filter %.o,$^) -o $@ $(ROOT_LIBS)
 
 bin/resize: bin/%: lib/%.o
 	@echo -e "Linking \E[0;49;92m"$@"\E[0;0m ... "
