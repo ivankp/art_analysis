@@ -1,7 +1,11 @@
 Data analysis project for Wade's class
 
-Useful commands:
+# Useful commands:
 
 for h in stat hist mvg; do ./bin/draw_vars `ls out | grep "_$h\.root" | sed -e 's/\(.*\)\.root/-i \1\:out\/\1\.root/g'` -o vars_$h.pdf -n; done
 
+# select training data
+for x in dali monet picasso renoir vangogh; do ./bin/split_data 0.6 out/$x/* | awk 'BEGIN{FS="/"}{print $NF}' | sed -r 's/\.[[:alnum:]]+$//' > out/"$x"_train.txt; done
 
+# list testing data
+for x in dali monet picasso renoir vangogh; do ls out/"$x" | sed -r 's/\.[[:alnum:]]+$//' | diff - out/"$x"_train.txt | grep '<' | sed -e 's/^< \(.*\)/\1/' > out/"$x"_test.txt; done

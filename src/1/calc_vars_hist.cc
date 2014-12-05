@@ -38,6 +38,7 @@ double Entropy(const TH1F& h) {
   double np = h.GetEntries();
   for (int i=1,n=h.GetNbinsX();i<=n;++i) {
     double p = h.GetBinContent(i)/np;
+    if (p<=0.) continue;
     ent += -p*log(p);
   }
   return ent;

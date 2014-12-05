@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 {
   // START OPTIONS **************************************************
   vector<var_file> fin;
-  string fout;
+  string fout, binsf;
   bool norm, logx, logy;
 
   try {
@@ -71,6 +71,8 @@ int main(int argc, char *argv[])
        "normalize histograms to unity")
       ("logx", po::bool_switch(&logx), "")
       ("logy", po::bool_switch(&logy), "")
+      ("bins,c", po::value<string>(&binsf)->default_value("config/hists.bins"),
+       "binning file")
     ;
 
     po::variables_map vm;
@@ -99,7 +101,7 @@ int main(int argc, char *argv[])
   }
   // END OPTIONS ****************************************************
 
-  hist::read_binnings("config/hists.bins");
+  hist::read_binnings(binsf);
 
   vector< pair< string, vector<hist*> > > h_;
   vector<pair<Float_t,hist*>> x;
@@ -202,6 +204,7 @@ int main(int argc, char *argv[])
   canv.SaveAs((fout+']').c_str());
 
   hist::print_overflow();
+  hist::delete_all();
 
   return 0;
 }

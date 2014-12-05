@@ -47,7 +47,7 @@ struct hist::acc_impl {
 
 // hist ***************************************************
 
-void hist::read_binnings(const char* filename) {
+void hist::read_binnings(const string& filename) {
   ifstream binsfile(filename);
 
   string hname;
